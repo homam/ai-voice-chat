@@ -65,11 +65,18 @@ const VoiceChat = () => {
 			const updatedMessages: Message[] = [...messages, { role: 'user' as const, content: transcript.text }]
 			setMessages(updatedMessages)
 
+			// Get the last assistant response for context
+			const lastAssistantMessage = messages.filter(m => m.role === 'assistant').pop()
+			const lastResponse = lastAssistantMessage?.content
+
 			// Fetch assistant reply (non-streaming)
 			const reply = await fetch(`${baseUrl}/api/chat`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ messages: updatedMessages })
+				body: JSON.stringify({ 
+					messages: updatedMessages,
+					lastResponse: lastResponse
+				})
 			}).then(r => r.json() as Promise<{ text: string }>)
 
 			setMessages([...updatedMessages, { role: 'assistant' as const, content: reply.text }])
@@ -121,25 +128,37 @@ const VoiceChat = () => {
 	}
 
 	return (
-		<div className='rounded-3xl shadow-2xl p-8 bg-gradient-to-br from-blue-50 to-indigo-100 w-full max-w-2xl mx-4'>
-			<div className='text-center mb-6'>
-				<h1 className='text-3xl font-bold text-gray-800 mb-2'>دستیار صوتی پزشکی</h1>
-				<p className='text-gray-600 text-sm'>با صحبت کردن، سوالات پزشکی خود را بپرسید</p>
+		<div className='min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col'>
+			{/* Header */}
+			<div className='bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4'>
+				<div className='text-center'>
+					<h1 className='text-2xl font-bold text-gray-800 mb-1'>دستیار صوتی پزشکی</h1>
+					<p className='text-gray-600 text-sm'>با صحبت کردن، سوالات پزشکی خود را بپرسید</p>
+				</div>
 			</div>
 
-			<div className='h-80 overflow-y-auto border-2 border-gray-200 rounded-2xl p-4 mb-6 bg-white shadow-inner space-y-3'>
+			{/* Messages Container */}
+			<div className='flex-1 overflow-y-auto px-4 py-6 space-y-4'>
 				{messages.length === 0 && (
-					<div className='text-center text-gray-500 py-8'>
-						<p>برای شروع گفتگو، روی دکمه صحبت کلیک کنید</p>
+					<div className='text-center text-gray-500 py-16'>
+						<div className='max-w-md mx-auto'>
+							<div className='w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4'>
+								<svg className='w-12 h-12 text-blue-500' fill='currentColor' viewBox='0 0 20 20'>
+									<path fillRule='evenodd' d='M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z' clipRule='evenodd' />
+								</svg>
+							</div>
+							<h3 className='text-lg font-semibold text-gray-700 mb-2'>شروع گفتگو</h3>
+							<p className='text-gray-500'>برای شروع گفتگو، روی دکمه صحبت در پایین صفحه کلیک کنید</p>
+						</div>
 					</div>
 				)}
 				
 				{messages.map((m, i) => (
 					<div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-						<div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+						<div className={`max-w-[85%] lg:max-w-[70%] rounded-2xl px-5 py-4 shadow-sm ${
 							m.role === 'user' 
-								? 'bg-blue-500 text-white rounded-br-md' 
-								: 'bg-gray-100 text-gray-800 rounded-bl-md'
+								? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md' 
+								: 'bg-white text-gray-800 rounded-bl-md border border-gray-100'
 						}`}>
 							{m.role === 'user' ? (
 								<p className='text-sm leading-relaxed'>{m.content}</p>
@@ -176,14 +195,14 @@ const VoiceChat = () => {
 
 				{isTranscribing && (
 					<div className='flex justify-start'>
-						<div className='bg-gray-100 text-gray-800 rounded-2xl rounded-bl-md px-4 py-3'>
+						<div className='bg-white text-gray-800 rounded-2xl rounded-bl-md px-5 py-4 shadow-sm border border-gray-100'>
 							<div className='flex items-center space-x-2 space-x-reverse'>
 								<div className='flex space-x-1 space-x-reverse'>
-									<div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce'></div>
-									<div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style={{animationDelay: '0.1s'}}></div>
-									<div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style={{animationDelay: '0.2s'}}></div>
+									<div className='w-2 h-2 bg-blue-400 rounded-full animate-bounce'></div>
+									<div className='w-2 h-2 bg-blue-400 rounded-full animate-bounce' style={{animationDelay: '0.1s'}}></div>
+									<div className='w-2 h-2 bg-blue-400 rounded-full animate-bounce' style={{animationDelay: '0.2s'}}></div>
 								</div>
-								<span className='text-sm'>در حال تبدیل صدا به متن...</span>
+								<span className='text-sm font-medium'>در حال تبدیل صدا به متن...</span>
 							</div>
 						</div>
 					</div>
@@ -191,47 +210,52 @@ const VoiceChat = () => {
 
 				{isLoading && !isTranscribing && (
 					<div className='flex justify-start'>
-						<div className='bg-gray-100 text-gray-800 rounded-2xl rounded-bl-md px-4 py-3'>
+						<div className='bg-white text-gray-800 rounded-2xl rounded-bl-md px-5 py-4 shadow-sm border border-gray-100'>
 							<div className='flex items-center space-x-2 space-x-reverse'>
 								<div className='flex space-x-1 space-x-reverse'>
-									<div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce'></div>
-									<div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style={{animationDelay: '0.1s'}}></div>
-									<div className='w-2 h-2 bg-gray-400 rounded-full animate-bounce' style={{animationDelay: '0.2s'}}></div>
+									<div className='w-2 h-2 bg-blue-400 rounded-full animate-bounce'></div>
+									<div className='w-2 h-2 bg-blue-400 rounded-full animate-bounce' style={{animationDelay: '0.1s'}}></div>
+									<div className='w-2 h-2 bg-blue-400 rounded-full animate-bounce' style={{animationDelay: '0.2s'}}></div>
 								</div>
-								<span className='text-sm'>در حال پردازش...</span>
+								<span className='text-sm font-medium'>در حال پردازش...</span>
 							</div>
 						</div>
 					</div>
 				)}
 			</div>
 
-			<button
-				onClick={toggleRecord}
-				disabled={isLoading}
-				className={`w-full rounded-2xl py-4 font-semibold text-white transition-all duration-300 transform ${
-					recording 
-						? 'bg-red-500 hover:bg-red-600 scale-105 shadow-lg' 
-						: isLoading 
-							? 'bg-gray-400 cursor-not-allowed' 
-							: 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:scale-105 shadow-lg'
-				}`}
-			>
-				{recording ? (
-					<div className='flex items-center justify-center space-x-2 space-x-reverse'>
-						<div className='w-4 h-4 bg-white rounded-full animate-pulse'></div>
-						<span>توقف ضبط</span>
-					</div>
-				) : isLoading ? (
-					<span>لطفاً صبر کنید...</span>
-				) : (
-					<div className='flex items-center justify-center space-x-2 space-x-reverse'>
-						<svg className='w-5 h-5' fill='currentColor' viewBox='0 0 20 20'>
-							<path fillRule='evenodd' d='M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z' clipRule='evenodd' />
-						</svg>
-						<span>شروع صحبت</span>
-					</div>
-				)}
-			</button>
+			{/* Footer with Record Button */}
+			<div className='bg-white/80 backdrop-blur-sm border-t border-gray-200/50 px-6 py-6'>
+				<div className='max-w-2xl mx-auto'>
+					<button
+						onClick={toggleRecord}
+						disabled={isLoading}
+						className={`w-full rounded-2xl py-5 font-semibold text-white transition-all duration-300 transform shadow-lg ${
+							recording 
+								? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 scale-105' 
+								: isLoading 
+									? 'bg-gray-400 cursor-not-allowed' 
+									: 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:scale-105'
+						}`}
+					>
+						{recording ? (
+							<div className='flex items-center justify-center space-x-2 space-x-reverse'>
+								<div className='w-5 h-5 bg-white rounded-full animate-pulse'></div>
+								<span className='text-lg'>توقف ضبط</span>
+							</div>
+						) : isLoading ? (
+							<span className='text-lg'>لطفاً صبر کنید...</span>
+						) : (
+							<div className='flex items-center justify-center space-x-2 space-x-reverse'>
+								<svg className='w-6 h-6' fill='currentColor' viewBox='0 0 20 20'>
+									<path fillRule='evenodd' d='M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z' clipRule='evenodd' />
+								</svg>
+								<span className='text-lg'>شروع صحبت</span>
+							</div>
+						)}
+					</button>
+				</div>
+			</div>
 
 			<audio ref={audioRef} hidden />
 		</div>
