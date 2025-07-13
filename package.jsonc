@@ -1,0 +1,25 @@
+{
+	"name": "med-voice-buddy",
+	"private": true,
+	"workspaces": ["server", "client"],
+	"scripts": {
+		// dev runs the backend & frontend in parallel
+		"dev": "npm-run-all --parallel dev:server dev:client",
+
+		"dev:server": "npm --workspace server run dev",
+		"dev:client": "npm --workspace client run dev",
+
+		// build bundles both workspaces
+		"build": "npm-run-all build:server build:client",
+
+		"build:server": "npm --workspace server run build",
+		"build:client": "npm --workspace client run build",
+
+		// start serves the compiled API; preview hosts the compiled UI
+		"start": "node server/dist/index.js",
+		"preview": "npm --workspace client run preview"
+	},
+	"devDependencies": {
+		"npm-run-all": "^4.1.5"
+	}
+}
