@@ -43,7 +43,8 @@ const VoiceChat = () => {
 			const form = new FormData()
 			form.append('audio', blob, 'audio.webm')
 
-			const transcript = await fetch('/api/transcribe', {
+			const baseUrl = import.meta.env.VITE_BACKEND_URL || ''
+			const transcript = await fetch(`${baseUrl}/api/transcribe`, {
 				method: 'POST',
 				body: form
 			}).then(r => r.json() as Promise<{ text: string }>)
@@ -54,7 +55,7 @@ const VoiceChat = () => {
 			setMessages(updatedMessages)
 
 			// Fetch assistant reply (non-streaming)
-			const reply = await fetch('/api/chat', {
+			const reply = await fetch(`${baseUrl}/api/chat`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ messages: updatedMessages })
@@ -77,7 +78,8 @@ const VoiceChat = () => {
 		
 		const play = async () => {
 			try {
-				const blob = await fetch('/api/tts', {
+				const baseUrl = import.meta.env.VITE_BACKEND_URL || ''
+				const blob = await fetch(`${baseUrl}/api/tts`, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ text: last.content })

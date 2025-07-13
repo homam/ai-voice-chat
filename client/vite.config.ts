@@ -9,7 +9,7 @@ export default defineConfig({
 		allowedHosts: true,
 		proxy: {
 			'/api': {
-				target: 'http://localhost:3100/',
+				target: process.env.VITE_BACKEND_URL || 'http://localhost:3100/',
 				changeOrigin: true,
 				// rewrite: (path) => path.replace(/^\/api/, '')
 			}
