@@ -11,5 +11,7 @@ app.use(express.json({ limit: '5mb' }))
 app.use('/api/chat', chatRouter)
 app.use('/api/transcribe', transcribeRouter)
 app.use('/api/tts', ttsRouter)
+app.use('/api/health', (req, res) => res.send('ok'))
 
-app.listen(3100, () => console.log('backend on :3100'))
+const PORT = process.env.PORT || 3100
+app.listen(PORT, () => console.log(`backend on :${PORT}`))
