@@ -5,19 +5,23 @@
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"build": "tsc -p .",
-		"start": "node dist/index.js"
+		"start": "node dist/index.js",
+		"migrate": "tsx src/database/migrate.ts",
+		"test:db": "tsx src/database/test.ts"
 	},
 	"dependencies": {
 		"cors": "^2.8.5",
 		"dotenv": "^16.5.0",
 		"express": "^4.19.0",
 		"multer": "2.0.1",
-		"openai": "^4.34.0"
+		"openai": "^4.34.0",
+		"pg": "^8.11.3"
 	},
 	"devDependencies": {
 		"@types/cors": "^2.8.19",
 		"@types/express": "^4.17.21",
 		"@types/multer": "^1.4.7",
+		"@types/pg": "^8.10.9",
 		"tsx": "^4.7.0",
 		"typescript": "^5.4.4"
 	}

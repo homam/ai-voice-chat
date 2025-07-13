@@ -1,0 +1,1 @@
+select * from ai_chat.chat_rooms order by "created_at" desc;

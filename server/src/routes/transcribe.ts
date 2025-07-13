@@ -16,7 +16,9 @@ transcribeRouter.post('/', upload.single('audio'), async (req, res) => {
 
 	const transcription = await openai.audio.transcriptions.create({
 		file: file,
-		model: 'whisper-1'
+		model: 'whisper-1',
+		language: 'fa',
+		prompt: `من سوالات درس پزشکی را می پرسم .`
 	})
 
 	res.json({ text: transcription.text })
