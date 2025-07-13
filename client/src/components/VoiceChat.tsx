@@ -8,9 +8,20 @@ const VoiceChat = () => {
 	const [recording, setRecording] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
 	const [isTranscribing, setIsTranscribing] = useState(false)
+	const [playingMessageIndex, setPlayingMessageIndex] = useState<number | null>(null)
 	const media = useRef<MediaRecorder | null>(null)
 	const chunks = useRef<Blob[]>([])
 	const audioRef = useRef<HTMLAudioElement | null>(null)
+
+	// Reset playing state when audio ends
+	useEffect(() => {
+		const audio = audioRef.current
+		if (audio) {
+			const handleEnded = () => setPlayingMessageIndex(null)
+			audio.addEventListener('ended', handleEnded)
+			return () => audio.removeEventListener('ended', handleEnded)
+		}
+	}, [])
 
 	// start / stop media-recorder
 	const toggleRecord = async () => {
@@ -71,30 +82,26 @@ const VoiceChat = () => {
 		}
 	}, [messages])
 
-	// play assistant TTS whenever it changes
-	useEffect(() => {
-		const last = messages.at(-1)
-		if (!last || last.role !== 'assistant' || !last.content.trim()) return
-		
-		const play = async () => {
-			try {
-				const baseUrl = import.meta.env.VITE_BACKEND_URL || ''
-				const blob = await fetch(`${baseUrl}/api/tts`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ text: last.content })
-				}).then(r => r.blob())
-				
-				if (audioRef.current) {
-					audioRef.current.src = URL.createObjectURL(blob)
-					audioRef.current.play()
-				}
-			} catch (error) {
-				console.error('Error playing TTS:', error)
+	// Function to play TTS for a specific message
+	const playTTS = async (text: string, messageIndex: number) => {
+		try {
+			setPlayingMessageIndex(messageIndex)
+			const baseUrl = import.meta.env.VITE_BACKEND_URL || ''
+			const blob = await fetch(`${baseUrl}/api/tts`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ text })
+			}).then(r => r.blob())
+			
+			if (audioRef.current) {
+				audioRef.current.src = URL.createObjectURL(blob)
+				await audioRef.current.play()
 			}
+		} catch (error) {
+			console.error('Error playing TTS:', error)
+			setPlayingMessageIndex(null)
 		}
-		play()
-	}, [messages])
+	}
 
 	// Custom markdown components for RTL and Persian styling
 	const markdownComponents = {
@@ -137,10 +144,30 @@ const VoiceChat = () => {
 							{m.role === 'user' ? (
 								<p className='text-sm leading-relaxed'>{m.content}</p>
 							) : (
-								<div className='text-sm leading-relaxed prose prose-sm max-w-none'>
-									<ReactMarkdown components={markdownComponents}>
-										{m.content}
-									</ReactMarkdown>
+								<div className='relative'>
+									<div className='text-sm leading-relaxed prose prose-sm max-w-none'>
+										<ReactMarkdown components={markdownComponents}>
+											{m.content}
+										</ReactMarkdown>
+									</div>
+									<button
+										onClick={() => playTTS(m.content, i)}
+										disabled={playingMessageIndex === i}
+										className={`mt-1 mr-1 p-2 rounded-full shadow-lg transition-colors duration-200 ${
+											playingMessageIndex === i 
+												? 'bg-gray-400 cursor-not-allowed' 
+												: 'bg-blue-500 hover:bg-blue-600 text-white'
+										}`}
+										title='پخش صدا'
+									>
+										{playingMessageIndex === i ? (
+											<div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+										) : (
+											<svg className='w-4 h-4' fill='currentColor' viewBox='0 0 20 20'>
+												<path fillRule='evenodd' d='M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.794L4.383 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.383l4.617-3.794a1 1 0 011.383.07zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z' clipRule='evenodd' />
+											</svg>
+										)}
+									</button>
 								</div>
 							)}
 						</div>
